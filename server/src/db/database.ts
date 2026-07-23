@@ -45,6 +45,11 @@ export const DEFAULT_DATABASE_PATH = resolve(
 );
 
 const schema = `
+  CREATE TABLE IF NOT EXISTS app_metadata (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
+
   CREATE TABLE IF NOT EXISTS expenses (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     description TEXT NOT NULL,
@@ -87,11 +92,24 @@ function currentMonth(now: Date): string {
 }
 
 export function seedDemoData(database: Database.Database, now = new Date()): void {
+  const seedMarker = database
+    .prepare("SELECT value FROM app_metadata WHERE key = 'demo_seeded'")
+    .get() as { value: string } | undefined;
+
+  if (seedMarker) {
+    return;
+  }
+
   const existing = database
     .prepare("SELECT COUNT(*) AS count FROM expenses")
     .get() as { count: number };
 
   if (existing.count > 0) {
+    database
+      .prepare(
+        "INSERT INTO app_metadata (key, value) VALUES ('demo_seeded', ?)",
+      )
+      .run(now.toISOString());
     return;
   }
 
@@ -159,6 +177,11 @@ export function seedDemoData(database: Database.Database, now = new Date()): voi
     insertGoal.run(month, "FOOD", 45_000, timestamp, timestamp);
     insertGoal.run(month, "TRANSPORTATION", 20_000, timestamp, timestamp);
     insertGoal.run(month, "ENTERTAINMENT", 15_000, timestamp, timestamp);
+    database
+      .prepare(
+        "INSERT INTO app_metadata (key, value) VALUES ('demo_seeded', ?)",
+      )
+      .run(timestamp);
   })();
 }
 
@@ -359,4 +382,3 @@ export class BudgetRepository {
     return mapGoal(row);
   }
 }
-

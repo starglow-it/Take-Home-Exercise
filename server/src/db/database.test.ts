@@ -22,6 +22,13 @@ describe("budget repository", () => {
     seedDemoData(database, now);
 
     expect(repository.listExpenses({ month: "2026-07" })).toHaveLength(5);
+
+    for (const expense of repository.listExpenses({ month: "2026-07" })) {
+      repository.removeExpense(expense.id);
+    }
+    seedDemoData(database, now);
+
+    expect(repository.listExpenses({ month: "2026-07" })).toHaveLength(0);
   });
 
   it("creates, updates, filters, and removes an expense", () => {
@@ -85,4 +92,3 @@ describe("budget repository", () => {
     });
   });
 });
-
